@@ -8,7 +8,10 @@ import datetime
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 
-model = pickle.load(open("linear-regression.pkl", "rb"))
+@st.cache_resource
+def load_model():
+    model=pickle.load(open("/app/streamlitdeployment/task-6-model-deployment/linear-regression.pkl", "rb"))
+    return model
 
 
 # api call + make database
@@ -54,6 +57,8 @@ def water_level_predictor():
     for date in lag_dates:
         lag = int(monthly_data[f"month_{date.month}"].iloc[date.day].text.strip())
         lags.append(lag)
+    
+    model=load_model()
     water_level = model.predict(np.array(lags).reshape(1, -1))
     rounded_water_level = water_level[0].round()
 
