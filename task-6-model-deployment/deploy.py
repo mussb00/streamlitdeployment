@@ -13,10 +13,8 @@ def load_model():
     model=pickle.load(open("/app/streamlitdeployment/task-6-model-deployment/linear-regression.pkl", "rb"))
     return model
 
-
-# api call + make database
-def water_level_predictor():
-    # click button
+@st.cache_resource
+def get_data():
     response = requests.get(
         "https://www.hidmet.gov.rs/eng/hidrologija/godisnje/godisnjak.php?sifra=45099"
     )
@@ -46,12 +44,19 @@ def water_level_predictor():
                 "month_12": columns[12],
             }
             monthly_data = monthly_data.append(data, ignore_index=True)
+    
+    return monthly_data
 
+
+# api call + make database
+def water_level_predictor():
+    
     # generate lag dates
     lag_dates = [
         datetime.datetime.now() - datetime.timedelta(days=i) for i in range(1, 8)
     ]
 
+    monthly_data=get_data()
     # get past week water levels
     lags = []
     for date in lag_dates:
@@ -64,7 +69,33 @@ def water_level_predictor():
 
     return rounded_water_level, monthly_data, lag_dates, lags
 
+@st.cache_resource
+def plot_graph():
+    current_date = datetime.datetime.now()
 
+    rounded_water_level, monthly_data, lag_dates, lags=water_level_predictor()
+    fig, ax = plt.subplots()
+    ax.plot(lag_dates, lags, label="water level")
+    ax.scatter(
+        current_date,
+        rounded_water_level,
+        marker="*",
+        color="green",
+        label="prediction",
+    )
+    ax.hlines(
+        y=500,
+        xmin=lag_dates[0],
+        xmax=lag_dates[-1],
+        color="r",
+        linestyle="--",
+        label="warning level",
+    )
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Water level (m)")
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+    return fig, ax
+    
 def main():
     st.title("Flood forecasts in Belgrade, Serbia")
 
@@ -81,27 +112,7 @@ def main():
             else:
                 st.warning(f"water level will be {rounded_water_level}. Be cautious")
 
-            current_date = datetime.datetime.now()
-            fig, ax = plt.subplots()
-            ax.plot(lag_dates, lags, label="water level")
-            ax.scatter(
-                current_date,
-                rounded_water_level,
-                marker="*",
-                color="green",
-                label="prediction",
-            )
-            ax.hlines(
-                y=500,
-                xmin=lag_dates[0],
-                xmax=lag_dates[-1],
-                color="r",
-                linestyle="--",
-                label="warning level",
-            )
-            ax.set_xlabel("Date")
-            ax.set_ylabel("Water level (m)")
-            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+            fig, ax = plot_graph()
             ax.legend()
             st.pyplot(fig)
 
