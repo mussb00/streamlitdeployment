@@ -13,7 +13,7 @@ def load_model():
     model=pickle.load(open("/app/streamlitdeployment/task-6-model-deployment/linear-regression.pkl", "rb"))
     return model
 
-@st.cache_resource
+# @st.cache_resource
 def get_data():
     response = requests.get(
         "https://www.hidmet.gov.rs/eng/hidrologija/godisnje/godisnjak.php?sifra=45099"
@@ -60,7 +60,7 @@ def water_level_predictor():
     # get past week water levels
     lags = []
     for date in lag_dates:
-        lag = int(monthly_data[f"month_{date.month}"].iloc[date.day].text.strip())
+        lag = int(float(monthly_data[f"month_{date.month}"].iloc[date.day].text.strip()))
         lags.append(lag)
     
     model=load_model()
@@ -92,7 +92,7 @@ def plot_graph():
         label="warning level",
     )
     ax.set_xlabel("Date")
-    ax.set_ylabel("Water level (m)")
+    ax.set_ylabel("Water level (cm)")
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
     return fig, ax
     
