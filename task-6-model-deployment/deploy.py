@@ -100,7 +100,7 @@ def main():
             st.write(chart_layout)
             
             
-@st.cache_data
+# @st.cache_data
 def new_data():
     with st.spinner('LOADING DATABASE'):
         return collect_new_data.main()
